@@ -1,0 +1,21 @@
+<launch>
+
+    <arg name="config_path" default="$(find mmsegmentation)/configs/ocrnet/ocrnet_hr18s_512x1024_80k_cityscapes.py"/>
+    <arg name="checkpoint_path"
+         default="$(find mmsegmentation)/data/ocrnet_hr18s_512x1024_80k_cityscapes_20200601_222735-55979e63.pth"/>
+    <arg name="topic_sub" default="/spinnaker_ros_driver_node/cam_fm_01/image_raw"/>
+    <arg name="topic_pub" default="/segmentation_result/cam_fm_01/image_raw"/>
+    <arg name="device" default="cuda:0"/>
+    <arg name="palette" default="cityscapes"/>
+
+    <node pkg="mmsegmentation" name="mmsegmentation"
+          type="ros_inference.py" output="screen">
+        <param name="config_path" value="$(arg config_path)"/>
+        <param name="checkpoint_path" value="$(arg checkpoint_path)"/>
+        <param name="topic_sub" value="$(arg topic_sub)"/>
+        <param name="topic_pub" value="$(arg topic_pub)"/>
+        <param name="device" value="$(arg device)"/>
+        <param name="palette" value="$(arg palette)"/>
+    </node>
+
+</launch>

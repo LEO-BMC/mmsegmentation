@@ -16,42 +16,36 @@ import time
 
 class semantic_segmentation:
     def __init__(self):
-        self.image_pub = rospy.Publisher("/segmentation_result/cam_fm_01/image_raw", Image, queue_size=10)
+        config_path = rospy.get_param('~config_path')
+        checkpoint_path = rospy.get_param('~checkpoint_path')
+        topic_sub = rospy.get_param('~topic_sub')
+        topic_pub = rospy.get_param('~topic_pub')
+        device = rospy.get_param('~device')
+        self.palette = rospy.get_param('~palette')
+
+        self.model = init_segmentor(config_path, checkpoint_path, device=device)
+
         self.bridge = CvBridge()
-        self.image_sub = rospy.Subscriber("/spinnaker_ros_driver_node/cam_fm_01/image_raw", Image, self.callback)
+        self.image_pub = rospy.Publisher(topic_pub, Image, queue_size=1)
+        self.image_sub = rospy.Subscriber(topic_sub, Image, self.callback, queue_size=1)
 
-        parser = ArgumentParser()
-        parser.add_argument('img', help='Image file')
-        parser.add_argument('config', help='Config file')
-        parser.add_argument('checkpoint', help='Checkpoint file')
-        parser.add_argument(
-            '--device', default='cuda:0', help='Device used for inference')
-        parser.add_argument(
-            '--palette',
-            default='cityscapes',
-            help='Color palette used for segmentation map')
-        self.args = parser.parse_args()
-
-        # build the model from a config file and a checkpoint file
-        self.model = init_segmentor(self.args.config, self.args.checkpoint, device=self.args.device)
 
     def callback(self, data):
         print("Segmentation Callback is called")
-
         try:
             image = self.bridge.imgmsg_to_cv2(data, "bgr8")
         except CvBridgeError as e:
             print(e)
+            return
 
         image = cv2.resize(image, (1024, 512), interpolation=cv2.INTER_LINEAR)
 
         t1 = time.monotonic()
         result = inference_segmentor(self.model, image)
         t2 = time.monotonic()
-        print('Segmentation took: {0}',  (t2 - t1))
+        print('Segmentation took: {0}', (t2 - t1))
 
-        # show the results
-        image_result = make_inference_return_colored_bgr(self.model, image, result, get_palette(self.args.palette))
+        image_result = make_inference_return_colored_bgr(self.model, image, result, get_palette(self.palette))
 
         try:
             self.image_pub.publish(self.bridge.cv2_to_imgmsg(image_result, "bgr8"))
@@ -60,8 +54,8 @@ class semantic_segmentation:
 
 
 if __name__ == '__main__':
-    segmentor = semantic_segmentation()
     rospy.init_node("semantic_segmentation", anonymous=True)
+    segmentor = semantic_segmentation()
     try:
         rospy.spin()
     except KeyboardInterrupt:
