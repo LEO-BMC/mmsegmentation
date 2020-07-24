@@ -114,3 +114,20 @@ def show_result_pyplot(model, img, result, palette=None, fig_size=(15, 10)):
     plt.figure(figsize=fig_size)
     plt.imshow(mmcv.bgr2rgb(img))
     plt.show()
+
+def make_inference_return_colored_bgr(model, img, result, palette=None, fig_size=(15, 10)):
+    """Visualize the segmentation results on the image.
+
+    Args:
+        model (nn.Module): The loaded segmentor.
+        img (str or np.ndarray): Image filename or loaded image.
+        result (list): The segmentation result.
+        palette (list[list[int]]] | None): The palette of segmentation
+            map. If None is given, random palette will be generated.
+            Default: None
+        fig_size (tuple): Figure size of the pyplot figure.
+    """
+    if hasattr(model, 'module'):
+        model = model.module
+    img = model.show_result(img, result, palette=palette, show=False)
+    return img
